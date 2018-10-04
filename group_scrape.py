@@ -19,10 +19,9 @@ def get_value_or_none(element):
         return ""
 
 
-def two_factor_bypass(driver):
-    
+def two_factor_bypass(driver, key):
     try:
-        driver.find_element_by_css_selector("input#approvals_code").send_keys()
+        driver.find_element_by_css_selector("input#approvals_code").send_keys(key)
         driver.find_element_by_css_selector("button#checkpointSubmitButton").click()
 
         driver.find_element_by_css_selector("input[id^='u_0_'][value='dont_save']").click()
@@ -34,13 +33,12 @@ def two_factor_bypass(driver):
 
         driver.find_element_by_css_selector("input[id^='u_0_'][value='dont_save']").click()
         driver.find_element_by_css_selector("button#checkpointSubmitButton").click()
-        
+
     except NoSuchElementException:
         pass
 
 
 def main():
-    
     email = config("EMAIL", default="")
     password = config("PASSWORD", default="")
 
@@ -51,26 +49,26 @@ def main():
     driver.find_element_by_css_selector("input#email").send_keys(email)
     driver.find_element_by_css_selector("input#pass").send_keys(password)
     driver.find_element_by_css_selector("input[id^='u_0_'][value='Log In']").click()
-    
+
     # in case your facebook is protected by two factor authentication, otherwise you can comment it out
     # please input your google two factor generated key if you have one besides the key variable inside the function
-    two_factor_bypass(driver=driver, key="278588")
-    
+    two_factor_bypass(driver=driver, key="167242")
+
     orders_list = []
 
     driver.get("https://www.facebook.com/groups/cookupsBD/")
     html_page = driver.page_source
     soup = BeautifulSoup(html_page, features="html.parser")
-    
+
     elements = soup.find_all("div", class_="_5pcr userContentWrapper", limit=100)
-    
+
     # skip the first item since it's basically an admin pinned post and not a sale post
     for element in elements[1:]:
         name = get_value_or_none(element.find("span", class_="fwb").find_next("a"))
         print(name)
         post_time = get_value_or_none(element.find("span", class_="timestampContent"))
         print(post_time)
-        
+
         detail_element = element.find("div", class_="mtm")
         order_title = get_value_or_none(detail_element.find("div", class_="_l53"))
         print(order_title)
@@ -78,10 +76,10 @@ def main():
         print(order_price)
         order_location = get_value_or_none(detail_element.find("div", class_="_l58"))
         print(order_location)
-        
+
         text_list = []
         link_list = []
-        
+
         # print(detail_element.prettify())
         more_detail = detail_element.find("div", class_="userContent").find_all("p")
         for para in more_detail:
@@ -94,13 +92,13 @@ def main():
                     l_value = get_value_or_none(l)
                     # print("Link: ", l_value)
                     link_list.append(l_value)
-        
+
         text_body = "".join(text_list)
         link_body = ", ".join(link_list)
-        
+
         print("Description: ", text_body)
         print("Links: ", link_body)
-        
+
         next_detail_element = detail_element.find_next_sibling("div", class_="mtm")
         image_element = next_detail_element.find("img", class_="scaledImageFitWidth")
         image_link = ""
@@ -116,15 +114,18 @@ def main():
             "price": order_price,
             "location": order_location,
             "description": text_body,
-            "links": link_list,
+            "links": link_body,
             "image": image_link
         }
         orders_list.append(order_dict)
         print("=====================================================================================================================================")
-        
-    dataframe = pandas.DataFrame(orders_list)
-    dataframe.to_csv("Cookups Orders.csv", encoding="utf-8")
-        
+		
+		# Output in Excel Sheet
+        dataframe = pandas.DataFrame(orders_list)
+        writer = pandas.ExcelWriter('Cookups Order.xlsx')
+        dataframe.to_excel(writer)
+        writer.save()
+
 
 if __name__ == "__main__":
     main()
