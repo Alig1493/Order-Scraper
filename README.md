@@ -1,6 +1,6 @@
 # Order-Scraper
 
-###Instructions:
+### Instructions:
 1. Virtual Environment Setup:
   * Need to set up a virtual environment in python3
   * Need to install the dependencies to run this project (pip install -r requirements.txt), fortunately they have been included in the requirements.txt file
